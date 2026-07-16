@@ -20,44 +20,133 @@ boundary. It is an experimental research tool, not a trading service.
 - Runs deterministic paper-trading rules with auditable entry snapshots.
 - Simulates sellability and checks RugCheck/Jupiter data before live buys.
 - Keeps signing inside Phantom; the app never receives a private key.
-- Supports optional Postgres persistence and background scan/watch jobs.
+- Uses Postgres for durable state and supports optional background scan/watch jobs.
 - Includes an optional, disabled-by-default local Claude CLI risk review.
 
 ## Requirements
 
 - Node.js 20.19 or newer
 - npm 10 or newer
-- PostgreSQL 14 or newer for durable state
+- PostgreSQL 14 or newer for normal operation
 - Phantom only if you choose to inspect or manually approve live swaps
 
-## Quick start
+## Local setup checklist
+
+### 1. Clone and install
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/<owner>/meme-ify-public.git
 cd meme-ify-public
 npm ci
-cp .env.example .env.local
+```
+
+Replace `<owner>` with the GitHub account or organization hosting your fork.
+
+### 2. Create a Postgres database
+
+If PostgreSQL is installed locally:
+
+```bash
 createdb meme_ify
+```
+
+Alternatively, start an isolated Postgres container:
+
+```bash
+docker run --name meme-ify-postgres \
+  -e POSTGRES_PASSWORD=memeify \
+  -e POSTGRES_DB=meme_ify \
+  -p 127.0.0.1:5432:5432 \
+  -d postgres:16
+```
+
+The container option uses this connection URL:
+
+```text
+postgresql://postgres:memeify@127.0.0.1:5432/meme_ify
+```
+
+### 3. Create local configuration
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and set `DATABASE_URL` to your database. For a default local
+Postgres installation, the example value may work unchanged. For the Docker
+command above, use the container connection URL shown above.
+
+All API keys are optional. Leave unused values blank. Never commit
+`.env.local`.
+
+### 4. Verify the installation
+
+```bash
+npm run check
+```
+
+This runs strict TypeScript checks, the deterministic accounting tests, and a
+production build. It does not contact a wallet, submit a trade, or exercise
+paid API accounts.
+
+### 5. Start the local app
+
+```bash
 npm run dev
 ```
 
 Open <http://127.0.0.1:5176>. The database schema in `db/schema.sql` is applied
-idempotently when the local server starts.
+idempotently when the local server starts. Missing optional integrations are
+reported in the Integrations panel and do not prevent the basic market scanner
+or paper-trading UI from loading.
 
 The server is intentionally bound to loopback and rejects non-loopback Host
 headers. Do not change it to `0.0.0.0`, place it behind a public tunnel, or
 deploy it as a public multi-user service. Its local API can write trading state
 and proxy requests through credentials in `.env.local`.
 
-## Configuration
+## Optional features and what they require
 
-`DATABASE_URL` is the only setting needed for durable state. Public market
-feeds work without search-provider keys, while Brave, Tavily, Serper,
-CoinGecko, Helius, and a dedicated Solana RPC improve coverage or reliability.
+| Feature | Requirement |
+| --- | --- |
+| Durable positions, settings, alerts, and scan history | `DATABASE_URL` |
+| Social-chatter search | At least one of `BRAVE_API_KEY`, `TAVILY_API_KEY`, or `SERPER_API_KEY` |
+| Rotation context | `COINGECKO_API_KEY` |
+| More reliable wallet and confirmation reads | A dedicated `SOLANA_RPC_URL` |
+| Live swaps | Phantom browser extension and a funded experimental wallet |
+| Local AI risk review | Claude CLI installed and authenticated, plus `ENABLE_LOCAL_CLAUDE=true` |
+| Background position watch | `SERVER_SCHEDULER_WATCH=true` |
+| Background new-coin scans | `SERVER_SCHEDULER_SCAN=true` |
 
-Copy `.env.example` to `.env.local` and fill only the integrations you want.
-Never commit `.env.local`. Background schedulers and the local Claude bridge
-are disabled by default.
+Background schedulers and the Claude bridge are intentionally disabled by
+default. Review [.env.example](.env.example) and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before enabling them.
+
+## Before trying live mode
+
+1. Run in paper mode first and confirm persistence survives a restart.
+2. Install Phantom and create a separate low-balance experimental wallet.
+3. Confirm the page origin is exactly `http://127.0.0.1:5176`.
+4. Review the mint, input amount, expected output, route, slippage, and price
+   impact in every Phantom approval.
+5. Assume any token can become unsellable and any stop loss can fill far below
+   its configured threshold.
+
+The automated test suite does not connect to Phantom, submit mainnet
+transactions, spend paid-provider quota, or test a user-supplied Postgres
+instance. Those boundaries must be validated by each user with their own
+accounts and deliberately small test amounts.
+
+## Publishing the source versus hosting the app
+
+Publishing this repository's source code is supported. Hosting the running app
+as a public website is not.
+
+The local server has no user-account authorization layer and can write trading
+state or proxy requests through credentials in `.env.local`. Keep it bound to
+`127.0.0.1`. Do not change it to `0.0.0.0`, expose it through a public tunnel,
+or deploy it as a shared multi-user service without designing a separate,
+authenticated backend.
 
 ## Commands
 
