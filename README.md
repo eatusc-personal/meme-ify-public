@@ -35,12 +35,10 @@ boundary. It is an experimental research tool, not a trading service.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/<owner>/meme-ify-public.git
+git clone https://github.com/eatusc/meme-ify-public.git
 cd meme-ify-public
 npm ci
 ```
-
-Replace `<owner>` with the GitHub account or organization hosting your fork.
 
 ### 2. Create a Postgres database
 
