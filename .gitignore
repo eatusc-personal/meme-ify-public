@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.DS_Store
+*.log
+
+# Local env files with secrets, never commit.
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+
+# Local DB dumps/backups (can be large, may contain data).
+db/backups/
+*.dump
+*.backup
+
+# Generated local assets.
+content/ig-launch/
