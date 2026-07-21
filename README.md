@@ -3,9 +3,25 @@
 meme-ify is a local-first dashboard for researching Solana memecoins, testing
 rules with paper money, and manually approving swaps through Phantom.
 
+The engineering centers on three ideas:
+
+- **Non-custodial by construction.** Every live swap is built as an unsigned
+  transaction and handed to the Phantom extension to review and sign; the app
+  never sees or stores a private key. Position records come from the confirmed
+  transaction's on-chain pre/post token balance deltas, so the books reflect
+  the actual fill, not the quoted one.
+- **Layered pre-buy safety gates.** Before a live buy can proceed, the app
+  blocks on excessive buy-side price impact, simulates the exit (a failed or
+  high-impact sell quote blocks the buy, the primary honeypot guard), blocks
+  on RugCheck danger levels, authority, and liquidity-lock risks, cross-checks
+  Jupiter's independent audit, and flags wash-trading and bot-ratio patterns.
+- **Deterministic accounting.** The paper and live position math in
+  `src/lib/paper.ts` and `src/lib/live.ts` is network-free and covered by
+  unit tests that run without touching a wallet, a database, or any API.
+
 It combines market discovery, liquidity and holder-risk signals, paper-trading
-accounting, a review queue, alerts, and an explicit non-custodial live-trading
-boundary. It is an experimental research tool, not a trading service.
+accounting, a review queue, and alerts. It is an experimental research tool,
+not a trading service.
 
 > **Risk warning:** memecoins are exceptionally volatile and frequently
 > manipulated. Safety checks can fail, RPC and pricing data can be stale, and
@@ -111,6 +127,7 @@ and proxy requests through credentials in `.env.local`.
 | Social-chatter search | At least one of `BRAVE_API_KEY`, `TAVILY_API_KEY`, or `SERPER_API_KEY` |
 | Rotation context | `COINGECKO_API_KEY` |
 | More reliable wallet and confirmation reads | A dedicated `SOLANA_RPC_URL` |
+| Helius integration status (planned smart-money webhooks, optional RPC upgrade) | `HELIUS_API_KEY` |
 | Live swaps | Phantom browser extension and a funded experimental wallet |
 | Local AI risk review | Claude CLI installed and authenticated, plus `ENABLE_LOCAL_CLAUDE=true` |
 | Background position watch | `SERVER_SCHEDULER_WATCH=true` |
@@ -166,6 +183,32 @@ before enabling live swaps, background jobs, or the Claude bridge.
 The longer research notes behind the current filters are in
 [docs/RESEARCH.md](docs/RESEARCH.md). Treat them as design context, not as
 validated investment claims.
+
+## Incidents and lessons
+
+One real-money incident is documented in the code rather than hidden.
+
+On 2026-05-23, a live swap confirmed on-chain but its position record was
+lost. The cause: immediately after a swap confirms, the RPC node knows the
+signature but has not yet indexed the transaction meta (token balances, fee).
+A single immediate `getTransaction` call returned success with an empty meta,
+which the code misclassified as "transaction could not be read" and abandoned
+the position record. The wallet held the tokens; the books did not.
+
+The fix, in `src/lib/wallet.ts` (`getTransactionWithRetry`):
+
+- Retry with backoff (1s, 2s, 3s, 5s, 8s) until the meta is present; the
+  typical wait is 1 to 3 seconds.
+- Deduplicate in-flight reads so multiple balance-delta reads of the same
+  signature share one retry chain instead of each paying the full budget.
+- Cache only successful reads, with a short TTL sized to the confirm path.
+
+The lost position was reconstructed from on-chain data with
+[scripts/recover_live_position.mjs](scripts/recover_live_position.mjs), which
+reads the confirmed transaction's actual fill and re-inserts the position row
+idempotently. The lesson generalizes: treat "confirmed" and "readable" as
+separate states, and never let a read failure discard a record of money that
+already moved.
 
 ## Project status
 
