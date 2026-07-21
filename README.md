@@ -170,7 +170,7 @@ npm run dev        # local development server plus API middleware
 npm run build      # type-check and create the frontend build
 npm run preview    # serve the build with the same loopback-only API middleware
 npm test           # deterministic trading/accounting unit tests
-npm run lint       # strict TypeScript plus unused-code checks
+npm run lint       # strict TypeScript, unused-code checks, and ESLint
 npm run check      # lint, tests, and production build
 ```
 
