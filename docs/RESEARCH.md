@@ -1,10 +1,7 @@
 # Meme Coin Discovery, Research Notes
 
-Background research behind the Meme Coin tab. Read alongside `MEMECOIN.md`.
+Background research behind the Meme Coin tab.
 Compiled 2026-05-20 from web research. Sources listed at the end.
-
-> Working note: do not use Chrome / browser MCP automation unless the user
-> explicitly asks for it.
 
 ---
 
@@ -246,8 +243,8 @@ What people are actually doing, filtered for substance.
 
 - Autonomous AI trading bots do not work for retail memecoins. 2026 has many
   documented blowups; retail loses the speed race and pays 1 to 5% in priority
-  fees just to transact. Human-in-the-loop wins. The MEMECOIN.md rule that the
-  agent never executes is the correct call.
+  fees just to transact. Human-in-the-loop wins. This project's rule that the
+  AI layer never executes a trade is the correct call.
 - The "AI agent framework" tokens (ai16z / ElizaOS, Virtuals) are mostly
   token-launch vehicles; ai16z is down ~99.9% and in a class-action alleging
   "a manual system disguised as autonomous technology." The open-source SDKs

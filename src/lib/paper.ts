@@ -211,7 +211,7 @@ export type PaperSettings = {
   minExitScore: number;
   minLiquidityUsd: number;
   // Min-age buy gate: the buy pass skips coins younger than this many hours.
-  // See MEMECOIN_RESEARCH.md, "Decision: min-age buy gate".
+  // See docs/RESEARCH.md, "Decision: min-age buy gate".
   minAgeHours: number;
   // Min unique-wallet gate: a coin is skipped if its Jupiter holderCount is
   // below this. Per the 2026 holder-concentration research, bundled launches
@@ -778,7 +778,7 @@ export function runBuyPass(
     }
     if (token.exitScore < minExitScore) continue;
     if (token.liquidityUsd < minLiquidityUsd) continue;
-    // Min-age gate. Per MEMECOIN_RESEARCH.md, ~95% of launches die in the
+    // Min-age gate. Per docs/RESEARCH.md, ~95% of launches die in the
     // first 24-72h, so an older coin still showing live volume has cleared
     // that filter. ageHours === 0 means DexScreener returned no pairCreatedAt;
     // an unknown age is not blocked here.

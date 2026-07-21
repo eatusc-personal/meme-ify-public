@@ -35,7 +35,8 @@ create table if not exists m_paper_account (
 -- Add later-added columns to an already-existing m_paper_account table.
 alter table m_paper_account add column if not exists auto_run boolean not null default false;
 alter table m_paper_account add column if not exists watch_on boolean not null default false;
--- min_age_hours: the min-age buy gate (see MEMECOIN_RESEARCH.md). Existing
+-- min_age_hours: the min-age buy gate (see docs/RESEARCH.md, "Decision:
+-- min-age buy gate"). Existing
 -- rows default to 24h.
 alter table m_paper_account add column if not exists min_age_hours double precision not null default 24;
 -- queue_mode / trade_queue: the Trade queue toggle and its pending intents.
