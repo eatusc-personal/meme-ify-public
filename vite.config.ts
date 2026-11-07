@@ -2148,7 +2148,7 @@ function pumpPortalCollectorPlugin(databaseUrl: string | undefined): Plugin {
 // ---------------------------------------------------------------------------
 // Server-side position watch scheduler.
 //
-// Replicates what the browser's runPositionWatch effect (App.tsx) does, but on
+// Replicates what the browser's runPositionWatch effect (MemeCoinPanel.tsx) does, but on
 // a setInterval owned by the vite dev server so it fires whether or not anyone
 // has the tab open. The user wanted "see alerts I missed when I open the
 // browser without keeping a browser open at all time" — moving the watch tick

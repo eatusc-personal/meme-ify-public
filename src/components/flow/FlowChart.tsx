@@ -66,7 +66,7 @@ export function FlowChart() {
           <FlowNode kind="outcome" title="Render scan list" sub="default sort: Rating · Hidden coins filtered to Hidden tab" />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: <code>runScan</code> in <code>App.tsx</code>, or step 1 of <code>runCycle</code> / <code>runLiveCycle</code>.</li>
+          <li><strong>Trigger</strong>: <code>runScan</code> in <code>MemeCoinPanel.tsx</code>, or step 1 of <code>runCycle</code> / <code>runLiveCycle</code>.</li>
           <li><strong>Gather</strong>: <code>scanMemecoins</code> in <code>src/lib/markets.ts</code> fans out to four candidate sources in parallel via <code>Promise.allSettled</code>; a slow or failing feed cannot stall the others. Source chips on the scan panel show which answered.</li>
           <li><strong>Enrich</strong>: <code>fetchPrices</code> hits DexScreener <code>latest/dex/tokens/{`{addrs}`}</code> 30 at a time. No key.</li>
           <li><strong>Jupiter audit</strong>: top 40 by exit score get a Jupiter Tokens v2 lookup for holder count, top-10 %, and the organic score. <code>runWithConcurrency(8)</code> caps in-flight requests; <code>jupiterInFlight</code> in <code>src/lib/safety.ts</code> dedups concurrent same-mint requests.</li>
@@ -84,7 +84,7 @@ export function FlowChart() {
           Browser-tab-open required. Skipped when mode is Real (the Live cycle takes over).
         </p>
         <div className="flow-chart">
-          <FlowNode kind="trigger" title="60-min interval fires" sub="setInterval · App.tsx · paper auto-run effect" />
+          <FlowNode kind="trigger" title="60-min interval fires" sub="setInterval · MemeCoinPanel.tsx · paper auto-run effect" />
           <FlowArrow />
           <FlowNode kind="gate" title="Busy lock?" sub="Shared lock with position watch. If held, skip this tick." />
           <FlowArrow />
@@ -119,7 +119,7 @@ export function FlowChart() {
           <FlowNode kind="gate" title="Daily loss limit check" sub="circuitBreakerTripped · toast once on transition into tripped" />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: <code>setInterval</code> in the auto-run <code>useEffect</code> in <code>App.tsx</code>, 3600000ms (60 min, slowed from 180000ms on 2026-05-26 to keep Brave inside its $5 free credit). Bails when <code>tradingMode === "real"</code>.</li>
+          <li><strong>Trigger</strong>: <code>setInterval</code> in the auto-run <code>useEffect</code> in <code>MemeCoinPanel.tsx</code>, 3600000ms (60 min, slowed from 180000ms on 2026-05-26 to keep Brave inside its $5 free credit). Bails when <code>tradingMode === "real"</code>.</li>
           <li><strong>Busy lock</strong>: <code>paperBusyRef</code> guards <code>runCycle</code>, <code>runPositionWatch</code>, and every manual paper handler so concurrent writes never clobber.</li>
           <li><strong>Scan</strong>: <code>scanMemecoins</code> reused; result also written to <code>scan_cache</code> via the persist debounce.</li>
           <li><strong>Re-price</strong>: held coins not in scan get a separate <code>fetchPrices</code>; the merged price map is then pruned to addresses still referenced (this scan, paper positions, live mints) to keep <code>price_snapshots</code> from growing unbounded.</li>
@@ -137,7 +137,7 @@ export function FlowChart() {
           entering Real mode. The paper Auto-run and Position watch are force-disabled in Real mode.
         </p>
         <div className="flow-chart">
-          <FlowNode kind="trigger" title="Real mode entered, OR 60-min tick" sub="setInterval · App.tsx · live cycle effect" />
+          <FlowNode kind="trigger" title="Real mode entered, OR 60-min tick" sub="setInterval · MemeCoinPanel.tsx · live cycle effect" />
           <FlowArrow />
           <FlowNode kind="gate" title="Live busy lock?" sub="liveCycleBusyRef · skip if a prior tick is still in flight" />
           <FlowArrow />
@@ -156,7 +156,7 @@ export function FlowChart() {
           <FlowNode kind="outcome" title='Toast "Live cycle proposed N trades"' sub='kind=spike · clicks scroll to "trade-queue"' />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: separate <code>useEffect</code> in <code>App.tsx</code>, partner to the paper auto-run. Mutual exclusion guarantees exactly one cycle owns the 60-min cadence per mode.</li>
+          <li><strong>Trigger</strong>: separate <code>useEffect</code> in <code>MemeCoinPanel.tsx</code>, partner to the paper auto-run. Mutual exclusion guarantees exactly one cycle owns the 60-min cadence per mode.</li>
           <li><strong>Decide buys</strong>: <code>decideLiveBuyIntents</code> in <code>src/lib/live.ts</code> applies the same gates as the paper buy pass plus the live-positions cap.</li>
           <li><strong>Re-price + peaks</strong>: <code>plausibleSellPrice</code> guards the peak so one thin-pool glitch upward doesn't bake a fake peak that later fires trailing as a -99% drawdown.</li>
           <li><strong>Decide sells</strong>: <code>decideLiveSellIntents</code> in <code>src/lib/live.ts</code> reads the lifted peaks for trailing-stop math.</li>
@@ -179,7 +179,7 @@ export function FlowChart() {
           the open tab surfaces them on its next state poll).
         </p>
         <div className="flow-chart">
-          <FlowNode kind="trigger" title="5-min interval fires" sub="setInterval · App.tsx · watch effect" />
+          <FlowNode kind="trigger" title="5-min interval fires" sub="setInterval · MemeCoinPanel.tsx · watch effect" />
           <FlowArrow />
           <FlowNode kind="gate" title="Busy lock?" sub="Shared with auto-cycle. Empty open lists also short-circuit." />
           <FlowArrow />
@@ -211,7 +211,7 @@ export function FlowChart() {
           />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: <code>useEffect</code> in <code>App.tsx</code>, 300000ms, plus an immediate first run on toggle-on.</li>
+          <li><strong>Trigger</strong>: <code>useEffect</code> in <code>MemeCoinPanel.tsx</code>, 300000ms, plus an immediate first run on toggle-on.</li>
           <li><strong>Prices</strong>: <code>fetchPrices</code> over the deduped paper-open + live-open address set; an empty response sets a soft error and bails the evaluation step.</li>
           <li><strong>Real mode</strong>: live positions are re-priced into <code>prices</code> so the live panel stays current, but no rules run against them. Live sells are exclusively user-clicked.</li>
           <li><strong>Queue mode</strong>: <code>decideSellIntents</code> in <code>src/lib/paper.ts</code> proposes only; the watch never auto-sells in queue mode.</li>
@@ -228,7 +228,7 @@ export function FlowChart() {
           queued buy intents are safe enough to keep, auto-dismisses the rest.
         </p>
         <div className="flow-chart">
-          <FlowNode kind="trigger" title="tradeQueue state changed" sub="useEffect dependency · App.tsx · safety effect" />
+          <FlowNode kind="trigger" title="tradeQueue state changed" sub="useEffect dependency · MemeCoinPanel.tsx · safety effect" />
           <FlowArrow label="for each pending buy intent" />
           <FlowNode kind="gate" title="Cache hit within 6h?" sub="safetyCacheRef · persisted to localStorage" />
           <FlowBranch
@@ -261,7 +261,7 @@ export function FlowChart() {
           />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: the safety <code>useEffect</code> in <code>App.tsx</code> depends on <code>tradeQueue</code>. Adding, removing, or replacing intents re-runs it.</li>
+          <li><strong>Trigger</strong>: the safety <code>useEffect</code> in <code>MemeCoinPanel.tsx</code> depends on <code>tradeQueue</code>. Adding, removing, or replacing intents re-runs it.</li>
           <li><strong>Cache</strong>: <code>safetyCacheRef</code> + <code>SAFETY_CACHE_TTL_MS</code> (6h). Persisted to <code>memeify-memecoin-safety-cache-v1</code>. Manual user buys deliberately do NOT evict the cache (one-time override, not safety endorsement).</li>
           <li><strong>In-flight dedup</strong>: <code>safetyInFlightRef</code> Map. Concurrent re-renders re-attach to the same Promise instead of issuing redundant RugCheck/Jupiter calls.</li>
           <li><strong>RugCheck + Jupiter</strong>: <code>runSafetyGate</code> in <code>src/lib/safety.ts</code>. Internal TTL split: RugCheck 5min, Jupiter 30min (audit data is slow-moving).</li>
@@ -306,7 +306,7 @@ export function FlowChart() {
           <FlowNode kind="outcome" title="Remove intents from queue · toasts" sub="any failed intent stays in the queue with an error" />
         </div>
         <ol className="flow-walkthrough">
-          <li><strong>Trigger</strong>: <code>approveQueued</code> in <code>App.tsx</code>. Bails with a toast if the paper busy lock is held.</li>
+          <li><strong>Trigger</strong>: <code>approveQueued</code> in <code>MemeCoinPanel.tsx</code>. Bails with a toast if the paper busy lock is held.</li>
           <li><strong>Paper</strong>: <code>applyQueuedIntents</code> in <code>src/lib/paper.ts</code> books all ticked paper trades atomically.</li>
           <li><strong>Live build</strong>: per intent, a Jupiter quote + <code>buildSwapTransaction</code> assembles an unsigned transaction. Pre-buy safety is re-checked against the cache.</li>
           <li><strong>Sign</strong>: <code>signAllTransactions</code> in Phantom signs the whole batch in one popup; the dashboard never touches a key.</li>
@@ -332,7 +332,7 @@ export function FlowChart() {
           <FlowBranch
             cols={[
               <div key="p" className="flow-branchcol">
-                <FlowMini label="PAPER" detail="buyOne / sellOne in App.tsx" />
+                <FlowMini label="PAPER" detail="buyOne / sellOne in MemeCoinPanel.tsx" />
                 <FlowArrow />
                 <FlowMini label="Apply to state" detail="positions + cash updated · ignores buy-side gates (manual override)" />
                 <FlowArrow />
@@ -356,11 +356,11 @@ export function FlowChart() {
         </div>
         <ol className="flow-walkthrough">
           <li><strong>Trigger</strong>: every Buy / Sell button on cards, popups, or position rows opens <code>ConfirmModal</code> via a <code>request*</code> helper. Auto-cycle and Queue approval are NOT gated by this modal.</li>
-          <li><strong>Paper</strong>: <code>buyOne</code> / <code>sellOne</code> in <code>App.tsx</code>. The shared busy lock holds across the price fetch on sell so a mid-cycle write can't overwrite it.</li>
+          <li><strong>Paper</strong>: <code>buyOne</code> / <code>sellOne</code> in <code>MemeCoinPanel.tsx</code>. The shared busy lock holds across the price fetch on sell so a mid-cycle write can't overwrite it.</li>
           <li><strong>Live safety</strong>: <code>runSafetyGate</code> in <code>src/lib/safety.ts</code> (4 checks). Blocking verdicts can be acknowledged with a checkbox; warns show as text only.</li>
           <li><strong>Sign</strong>: <code>signAndSendBase64Tx</code> in <code>src/lib/wallet.ts</code>. Slippage hard-capped at 10% client-side.</li>
           <li><strong>Confirm</strong>: <code>fetchSwapDelta</code> reads the on-chain delta; failure surfaces an error and refuses to record the position (no falsified ledger).</li>
-          <li><strong>Force-save</strong>: <code>confirmLiveBuy</code> / <code>confirmLiveSell</code> in <code>App.tsx</code> build the persist payload from <code>persistRef.current</code> (latest committed siblings) so a cycle that ran during the Phantom sign isn't stale-overwritten. The save is non-debounced.</li>
+          <li><strong>Force-save</strong>: <code>confirmLiveBuy</code> / <code>confirmLiveSell</code> in <code>MemeCoinPanel.tsx</code> build the persist payload from <code>persistRef.current</code> (latest committed siblings) so a cycle that ran during the Phantom sign isn't stale-overwritten. The save is non-debounced.</li>
         </ol>
       </div>
 
@@ -410,7 +410,7 @@ export function FlowChart() {
           <li><strong>Dedup + cap</strong>: queries <code>m_paper_alerts</code> for <code>kind='newcoin'</code> rows in the last 6h and skips those addresses; then slices to <code>NEWCOIN_MAX_ALERTS_PER_SCAN</code> (default 5).</li>
           <li><strong>Rug screen</strong>: <code>screenRugCheck</code> in <code>src/lib/safety.ts</code> (free RugCheck), default on via <code>NEWCOIN_RUGCHECK</code>. Unverifiable mints (often too new to be indexed) are skipped, not alerted.</li>
           <li><strong>Alert</strong>: <code>formatNewCoinAlert</code> in <code>vite.config.ts</code> packs every decision criterion the scan already computed (no extra API calls) into one line and inserts it into <code>m_paper_alerts</code> with <code>dismissed=false</code>.</li>
-          <li><strong>Delivery</strong>: <code>applyServerState</code> in <code>App.tsx</code> diffs server alerts against what it has seen and fires a toast + OS <code>Notification</code> for each fresh, undismissed one. With no tab open the alert simply waits in the Alerts log until one opens.</li>
+          <li><strong>Delivery</strong>: <code>applyServerState</code> in <code>MemeCoinPanel.tsx</code> diffs server alerts against what it has seen and fires a toast + OS <code>Notification</code> for each fresh, undismissed one. With no tab open the alert simply waits in the Alerts log until one opens.</li>
         </ol>
       </div>
 

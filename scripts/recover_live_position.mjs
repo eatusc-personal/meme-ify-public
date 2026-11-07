@@ -17,7 +17,7 @@
 //
 // Why a separate script instead of fixing it in-app: the lost position
 // already happened. The retry-on-meta-not-found gap (see the patch in
-// App.tsx / live.ts after this) prevents the next one.
+// MemeCoinPanel.tsx / live.ts after this) prevents the next one.
 
 import pg from "pg";
 

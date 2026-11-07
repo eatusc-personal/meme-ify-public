@@ -13,7 +13,7 @@ import type { PumpEvent } from "./pumpwatch";
 // One row from the `watchlist` table. User-set price alert; the
 // position-watch tick reads every active row, fetches current prices,
 // and fires a toast when target is hit. See `evaluateWatchlist` in
-// App.tsx and the watchlist table comment in db/schema.sql.
+// components/memecoin/MemeCoinPanel.tsx and the watchlist table comment in db/schema.sql.
 export type WatchlistEntry = {
   id: string;
   mint: string;
@@ -33,7 +33,7 @@ export type WatchlistEntry = {
 // retired in the 2026-05-24 "no-localStorage-for-settings" pass. See
 // docs/ARCHITECTURE.md "Persistence audit" for the architecture rationale.
 export type UserPrefs = {
-  sortBy: string; // SortKey union in App.tsx; persisted as a plain string
+  sortBy: string; // SortKey union in components/memecoin/types.ts; persisted as a plain string
   sortDir: "asc" | "desc";
   hideView: "visible" | "hidden";
   hiddenMints: string[]; // mint addresses the user has hidden from the scan

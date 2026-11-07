@@ -399,7 +399,7 @@ function hoursSince(iso: string): number {
 // tick from a thin pool, not a real move. Refuse to book the fake profit.
 // The downside is NOT guarded: real memecoin rugs routinely take a coin
 // 1000x below entry, and that fill needs to be honored so the loss is booked.
-// Exported so the live trading path (runLiveCycle in App.tsx) can guard its
+// Exported so the live trading path (runLiveCycle in MemeCoinPanel.tsx) can guard its
 // own peak-lift against the same kind of bad tick.
 export function plausibleSellPrice(price: number, entryPriceUsd: number): boolean {
   if (price <= 0 || entryPriceUsd <= 0) return false;

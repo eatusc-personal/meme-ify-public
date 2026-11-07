@@ -1826,7 +1826,7 @@ dd {
 }
 
 /* Brief pulse on the card a new-coin alert just jumped to, so the eye lands on
-   it after the scroll. See jumpToCoin in App.tsx. */
+   it after the scroll. See jumpToCoin in MemeCoinPanel.tsx. */
 .mc-card-flash {
   animation: mc-card-flash 2.2s ease-out 1;
 }

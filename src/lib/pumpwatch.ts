@@ -74,7 +74,7 @@ export async function buildPumpEvent(
   // Serper-primary for auto-logged pump events. Bulk fire-and-forget path
   // that filled the Pump triggers panel; Tavily's better snippet quality
   // doesn't pay off on rows the user almost never reads. Tavily stays
-  // available as the fallback. Manual chatter requests in App.tsx
+  // available as the fallback. Manual chatter requests in MemeCoinPanel.tsx
   // (runChatter) keep the default Tavily-primary path.
   const res = await checkSocialChatter(coin.symbol, coin.name, { preferProvider: "serper" });
   return {
