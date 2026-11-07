@@ -33,8 +33,10 @@ function deserializeTx(base64: string): AnyTx {
   }
 }
 
-function txToBase64(tx: AnyTx): string {
-  const bytes = tx.serialize();
+// Legacy Transaction.serialize() is async as of @solana/web3.js 1.98.5;
+// VersionedTransaction.serialize() is still sync. Await covers both.
+async function txToBase64(tx: AnyTx): Promise<string> {
+  const bytes = await tx.serialize();
   let s = "";
   for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
   return btoa(s);
@@ -140,7 +142,7 @@ export async function signAllBase64Txs(
   }
   try {
     const signed = await p.signAllTransactions(base64s.map(deserializeTx));
-    return { ok: true, signed: signed.map(txToBase64) };
+    return { ok: true, signed: await Promise.all(signed.map(txToBase64)) };
   } catch (e) {
     // User rejecting the Phantom approval lands here too.
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
