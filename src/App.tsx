@@ -15,7 +15,6 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Gauge,
   LayoutGrid,
   ListChecks,
   Plus,
@@ -28,7 +27,7 @@ import {
   Workflow,
   XCircle
 } from "lucide-react";
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { aiReview } from "./lib/claude";
 import {
   scanMemecoins,
@@ -142,6 +141,11 @@ import {
   type LivePosition,
   type LiveBaseMint
 } from "./lib/live";
+import { ApiUsageBanner } from "./components/ApiUsageBanner";
+import { useCollapsibleSection } from "./hooks/useCollapsibleSection";
+import { showSystemPositionWatchNotification } from "./lib/notifications";
+import { shortAddr, signedUsd, priceLabel, reasonTooltip, fmtPrice } from "./lib/format";
+import { PanelTitle } from "./components/PanelTitle";
 
 type Tab = "memecoin" | "memecoin_flow";
 
@@ -151,16 +155,6 @@ const VALID_TABS: Tab[] = ["memecoin", "memecoin_flow"];
 function readTabFromHash(): Tab {
   const fromHash = window.location.hash.slice(1);
   return (VALID_TABS as string[]).includes(fromHash) ? (fromHash as Tab) : "memecoin";
-}
-
-function showSystemPositionWatchNotification(body: string) {
-  try {
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification("Meme coin position watch", { body });
-    }
-  } catch {
-    /* OS notifications unavailable; the in-app alert still shows */
-  }
 }
 
 function App() {
@@ -251,37 +245,6 @@ type SortKey =
   | "top10"
   | "holdersPerDay";
 type Holding = { costUsd: number; pnlUsd: number; pnlPct: number };
-
-function shortAddr(addr: string): string {
-  return addr.length > 12 ? `${addr.slice(0, 5)}...${addr.slice(-4)}` : addr;
-}
-
-function signedUsd(n: number): string {
-  return `${n >= 0 ? "+" : "-"}${fmtUsd(Math.abs(n))}`;
-}
-
-// A price for the confirmation-popup rows: $-prefixed, or "unknown" if absent.
-function priceLabel(n: number): string {
-  return n > 0 ? `$${fmtPrice(n)}` : "unknown";
-}
-
-// Hover tooltip for the closed-trades Reason pill. Maps the bare exit_reason
-// string to a human-readable explanation, with the realized P&L appended so
-// the reader sees the outcome alongside the cause.
-function reasonTooltip(reason: string, pnl: number): string {
-  const pnlText = `${pnl >= 0 ? "+" : "-"}$${Math.abs(pnl).toFixed(2)} realized`;
-  const base: Record<string, string> = {
-    manual: "You clicked Sell. The price was fetched fresh at confirm time.",
-    "take profit": "Auto-closed by the +N% take-profit threshold in your trading rules.",
-    "stop loss": "Auto-closed by the -N% stop-loss threshold in your trading rules.",
-    "trailing-stop": "Trailing stop fired: price dropped past the trail % from the peak the position had ever printed.",
-    "max hold time": "Auto-closed because the position aged past the max-hold-hours threshold.",
-    "liquidity death (watch exit)":
-      "Force-closed by the position watch: liquidity collapsed below $3k, exiting before the pool went to zero."
-  };
-  const explained = base[reason] ?? `Exit reason recorded as "${reason}".`;
-  return `${explained}\n\n${pnlText}`;
-}
 
 // A pending buy/sell confirmation. Set when the user clicks a manual Buy or
 // Sell (paper or live); the action only fires from the modal's Confirm button.
@@ -4810,9 +4773,6 @@ function SwapPanel({ walletAddress }: { walletAddress: string | null }) {
   );
 }
 
-// Coin detail popup. Opened by clicking a ticker in the open positions or
-// closed trades tables. Shows the live scan card if the coin is in the current
-// scan, plus this wallet's full trade history for that coin. Dismissible.
 // ---------------------------------------------------------------------------
 // Holdings chart mosaic
 //
@@ -4873,13 +4833,6 @@ function buildHeldCoins(paper: PaperState, live: LiveState): HeldCoin[] {
     });
   }
   return out;
-}
-
-// Compact price string that keeps precision on sub-cent memecoin prices.
-function fmtPrice(n: number): string {
-  if (!Number.isFinite(n) || n <= 0) return "n/a";
-  if (n >= 1) return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
-  return n.toLocaleString("en-US", { maximumSignificantDigits: 4 });
 }
 
 // Loaded candles per timeframe. Held in the MemeCoinPanel (not the modal) and
@@ -5448,6 +5401,9 @@ function HoldingsMosaicModal({
   );
 }
 
+// Coin detail popup. Opened by clicking a ticker in the open positions or
+// closed trades tables. Shows the live scan card if the coin is in the current
+// scan, plus this wallet's full trade history for that coin. Dismissible.
 function CoinPopup({
   address,
   token,
@@ -8563,13 +8519,6 @@ function PumpTriggersPanel({
   );
 }
 
-// Integrations status panel. Reads /api/integrations every 30s and renders
-// a compact list: one row per external service the Meme Coin tab depends on.
-// Green dot = configured + healthy, amber = configured but no health signal
-// yet (still starting up or never called), red = configured but failing, grey
-// = missing env var. Lets the user verify at a glance that PumpPortal is
-// streaming, CoinGecko is reachable, Helius is wired, etc., without digging
-// in the dev-server logs.
 // Watchlist panel: user-set price alerts. The position-watch tick fires
 // when any active row's target hits. Triggered rows stay in the list as
 // history; user can "Re-arm" (clears triggered_at) or "Remove" to clean up.
@@ -8744,6 +8693,13 @@ function WatchlistPanel({
   );
 }
 
+// Integrations status panel. Reads /api/integrations every 30s and renders
+// a compact list: one row per external service the Meme Coin tab depends on.
+// Green dot = configured + healthy, amber = configured but no health signal
+// yet (still starting up or never called), red = configured but failing, grey
+// = missing env var. Lets the user verify at a glance that PumpPortal is
+// streaming, CoinGecko is reachable, Helius is wired, etc., without digging
+// in the dev-server logs.
 function IntegrationsPanel() {
   const section = useCollapsibleSection("integrations");
   const [items, setItems] = useState<IntegrationEntry[]>([]);
@@ -9465,182 +9421,6 @@ function FlowMini({ label, detail }: { label: string; detail?: string }) {
     <div className="flow-mini">
       <div className="flow-mini-label">{label}</div>
       {detail && <div className="flow-mini-detail">{detail}</div>}
-    </div>
-  );
-}
-
-// Collapsible-section state. Module-level so any component can call
-// useCollapsibleSection(id) and stay in sync with every other consumer
-// without prop drilling. Persisted to localStorage so the user's collapse
-// preferences survive reloads.
-//
-// Each call site picks a stable id (e.g. "meme-coin-research", "live-panel").
-// CSS hides everything except .panel-title when the section is collapsed;
-// React keeps the body mounted so background work (intervals, useEffects)
-// continues running for collapsed panels. That's the right trade-off here
-// since LivePanel's balance refresh and PaperPanel's cycle timers should
-// keep ticking even when the user has collapsed those sections to scroll past.
-const COLLAPSED_SECTIONS_KEY = "memeify-memecoin-collapsed-sections-v1";
-let collapsedSectionsCache: Set<string> | null = null;
-const collapsedSectionsListeners = new Set<() => void>();
-function readCollapsedSections(): Set<string> {
-  if (collapsedSectionsCache) return collapsedSectionsCache;
-  try {
-    const raw = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    // Drop orphaned ids whose panels no longer exist. The set is
-    // user-controlled so it accumulates over time; deleting a panel without
-    // pruning here leaves dead entries that other tooling could mistake for
-    // signal. ORPHANED_SECTION_IDS is the explicit removal list.
-    //   - "memecoin-flow": briefly existed as a collapsible panel inside the
-    //     Meme Coin tab; was promoted to its own tab (`memecoin_flow`) in the
-    //     same session. Anyone who collapsed it during that interval has a
-    //     dead entry. (2026-05-23)
-    const ORPHANED_SECTION_IDS = new Set(["memecoin-flow"]);
-    const cleaned: string[] = Array.isArray(arr)
-      ? arr.filter((x) => typeof x === "string" && !ORPHANED_SECTION_IDS.has(x))
-      : [];
-    collapsedSectionsCache = new Set(cleaned);
-    // Persist the cleanup if anything was actually removed, so future reads
-    // (and any other tooling that reads the raw key) see the trimmed list.
-    if (Array.isArray(arr) && cleaned.length !== arr.length) {
-      try {
-        localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(cleaned));
-      } catch {
-        /* storage unavailable; in-memory cache still works for this session */
-      }
-    }
-  } catch {
-    collapsedSectionsCache = new Set();
-  }
-  return collapsedSectionsCache;
-}
-function writeCollapsedSections(s: Set<string>) {
-  collapsedSectionsCache = s;
-  try {
-    localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(Array.from(s)));
-  } catch {
-    /* storage unavailable; in-memory cache still works for this session */
-  }
-  collapsedSectionsListeners.forEach((fn) => fn());
-}
-function useCollapsibleSection(id: string): {
-  collapsed: boolean;
-  toggle: () => void;
-  className: string;
-} {
-  // Force a re-render via reducer increment whenever the shared set changes.
-  const [, force] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => {
-    collapsedSectionsListeners.add(force);
-    return () => {
-      collapsedSectionsListeners.delete(force);
-    };
-  }, []);
-  const collapsed = readCollapsedSections().has(id);
-  return {
-    collapsed,
-    toggle: () => {
-      const cur = readCollapsedSections();
-      const next = new Set(cur);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      writeCollapsedSections(next);
-    },
-    className: collapsed ? "panel-collapsed" : ""
-  };
-}
-
-function PanelTitle({
-  icon: Icon,
-  title,
-  collapsed,
-  onToggle
-}: {
-  icon: typeof Gauge;
-  title: string;
-  // When onToggle is provided, the title becomes a button: clicking anywhere
-  // in the bar toggles collapse, and a chevron indicates the current state.
-  // When omitted, PanelTitle renders as a static heading (existing behavior).
-  collapsed?: boolean;
-  onToggle?: () => void;
-}) {
-  if (onToggle) {
-    return (
-      <button
-        type="button"
-        className="panel-title panel-title-toggle"
-        onClick={onToggle}
-        aria-expanded={!collapsed}
-        title={collapsed ? "Click to expand" : "Click to collapse"}
-      >
-        <Icon size={18} />
-        <h2>{title}</h2>
-        <span className="panel-title-chevron" aria-hidden="true">
-          {collapsed ? "▸" : "▾"}
-        </span>
-      </button>
-    );
-  }
-  return (
-    <div className="panel-title">
-      <Icon size={18} />
-      <h2>{title}</h2>
-    </div>
-  );
-}
-
-
-// Rate-limit banner for metered upstreams (Tavily, Serper). Polls
-// /api/usage/summary every 60s and surfaces a warning when any provider
-// crosses 80% of its monthly free-tier cap, an error at 100%. Rendered as
-// the first child of <main> so it appears on every tab; the user was on
-// /#plan when they first hit Tavily's 432, so the banner has to be global,
-// not Meme-Coin-tab-local. Hidden when nothing is over threshold.
-type UsageSummary = { provider: string; used: number; cap: number; pct: number };
-function ApiUsageBanner() {
-  const [summary, setSummary] = useState<UsageSummary[] | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/usage/summary");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled && data.ok) setSummary(data.summary as UsageSummary[]);
-      } catch {
-        /* network blip — leave the prior value, try again next tick */
-      }
-    };
-    void load();
-    const id = setInterval(() => void load(), 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-  if (!summary) return null;
-  // Threshold logic: anything >= 80% surfaces; >= 100% paints red. A provider
-  // under 80% is invisible (no nag for healthy state).
-  const surfaced = summary.filter((s) => s.pct >= 80);
-  if (surfaced.length === 0) return null;
-  const exceeded = surfaced.filter((s) => s.pct >= 100);
-  const tone = exceeded.length > 0 ? "danger" : "warn";
-  const label = (s: UsageSummary) =>
-    `${s.provider} ${s.used}/${s.cap} (${s.pct.toFixed(1)}%)`;
-  return (
-    <div className={`api-usage-banner api-usage-banner-${tone}`} role="status">
-      <strong>
-        {exceeded.length > 0
-          ? "API quota exceeded:"
-          : "API quota approaching:"}
-      </strong>{" "}
-      {surfaced.map(label).join(" · ")}
-      {exceeded.length > 0 && (
-        <span className="api-usage-banner-hint">
-          Calls from this provider will fail until the monthly window resets (UTC).
-        </span>
-      )}
     </div>
   );
 }
