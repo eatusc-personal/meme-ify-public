@@ -51,7 +51,7 @@ not a trading service.
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/eatusc/meme-ify-public.git
+git clone https://github.com/eatusc-personal/meme-ify-public.git
 cd meme-ify-public
 npm ci
 ```
